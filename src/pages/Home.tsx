@@ -1,4 +1,8 @@
-import { useState } from "react"
+import {
+  useEffect,
+  useState,
+} from "react"
+
 import { useNavigate } from "react-router-dom"
 
 import {
@@ -11,11 +15,58 @@ import {
 import Navbar from "../components/Navbar"
 import AvatarStack from "../components/AvatarStack"
 
+import {
+  getMessageCount,
+} from "../lib/messages"
+
+
 const Home = () => {
   const navigate = useNavigate()
 
   const [isLeaving, setIsLeaving] =
     useState(false)
+
+  const [
+    messageCount,
+    setMessageCount,
+  ] = useState(0)
+
+  const [
+    countLoading,
+    setCountLoading,
+  ] = useState(true)
+
+
+  useEffect(() => {
+    let active = true
+
+    const loadCount = async () => {
+      try {
+        const count =
+          await getMessageCount()
+
+        if (!active) return
+
+        setMessageCount(count)
+      } catch (error) {
+        console.error(
+          "Unable to load message count:",
+          error,
+        )
+      } finally {
+        if (active) {
+          setCountLoading(false)
+        }
+      }
+    }
+
+    void loadCount()
+
+    return () => {
+      active = false
+    }
+  }, [])
+
 
   const smoothNavigate = (
     path: string,
@@ -29,13 +80,16 @@ const Home = () => {
     }, 180)
   }
 
+
   const goToDirectory = () => {
     smoothNavigate("/faculty")
   }
 
+
   const goToMessages = () => {
     smoothNavigate("/messages")
   }
+
 
   return (
     <div
@@ -54,13 +108,16 @@ const Home = () => {
         }
       `}
     >
+
       <Navbar />
+
 
       <main>
 
         {/* =========================================
             HERO
         ========================================= */}
+
         <section
           id="home"
           className="relative overflow-hidden border-b border-zinc-200/70"
@@ -71,7 +128,9 @@ const Home = () => {
             aria-hidden="true"
             className="pointer-events-none absolute inset-0"
           >
+
             <div className="absolute left-1/2 top-[-120px] h-[420px] w-[700px] -translate-x-1/2 rounded-full bg-blue-50/80 blur-3xl sm:h-[500px] sm:w-[900px]" />
+
           </div>
 
 
@@ -113,6 +172,7 @@ const Home = () => {
             {/* =====================================
                 HERO ACTIONS
             ===================================== */}
+
             <div className="mt-8 flex w-full max-w-[360px] flex-col items-stretch justify-center gap-3 sm:w-auto sm:max-w-none sm:flex-row">
 
               {/* Leave a Message */}
@@ -210,11 +270,16 @@ const Home = () => {
 
 
             {/* =====================================
-                SOCIAL PROOF
+                REAL MESSAGE COUNT
             ===================================== */}
+
             <div className="mt-10 flex flex-col items-center gap-3 sm:mt-12 sm:flex-row sm:gap-4">
 
-              <AvatarStack />
+              <AvatarStack
+                count={messageCount}
+                loading={countLoading}
+              />
+
 
               <div className="text-center sm:text-left">
 
@@ -226,11 +291,29 @@ const Home = () => {
                     className="text-zinc-500"
                   />
 
-                  <p className="text-sm font-medium text-zinc-800">
-                    Messages shared with our community
-                  </p>
+
+                  {countLoading ? (
+
+                    <div className="h-4 w-40 animate-pulse rounded bg-zinc-200" />
+
+                  ) : (
+
+                    <p className="text-sm font-medium text-zinc-800">
+
+                      {messageCount.toLocaleString()}{" "}
+
+                      {messageCount === 1
+                        ? "message"
+                        : "messages"}{" "}
+
+                      shared with our community
+
+                    </p>
+
+                  )}
 
                 </div>
+
 
                 <p className="mt-0.5 text-xs text-zinc-500">
                   Shared with appreciation by our students.
@@ -248,6 +331,7 @@ const Home = () => {
         {/* =========================================
             MESSAGE SECTION
         ========================================= */}
+
         <section
           id="about"
           className="border-b border-zinc-200/70 bg-white"
@@ -261,6 +345,7 @@ const Home = () => {
               <div className="flex items-center gap-3">
 
                 <div className="h-px w-7 bg-blue-600" />
+
 
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500 sm:text-xs">
                   A message from CCIS
@@ -317,6 +402,7 @@ const Home = () => {
         {/* =========================================
             DIRECTORY SECTION
         ========================================= */}
+
         <section
           id="directory"
           className="bg-zinc-50/60"
@@ -332,9 +418,7 @@ const Home = () => {
 
 
               <h2 className="mt-4 text-[32px] font-semibold leading-tight tracking-[-0.035em] text-zinc-950 sm:text-4xl">
-
                 Who would you like to thank?
-
               </h2>
 
 
@@ -406,6 +490,7 @@ const Home = () => {
       {/* =========================================
           FOOTER
       ========================================= */}
+
       <footer className="border-t border-zinc-200 bg-white">
 
         <div className="mx-auto flex max-w-7xl flex-col items-center px-5 py-6 text-center sm:px-8 lg:px-10">
