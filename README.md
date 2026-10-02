@@ -1,75 +1,118 @@
-# React + TypeScript + Vite
+# CCIS Teachers’ Day Message Wall
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A simple and heartfelt web experience created for the **College of Computing and Information Sciences** to celebrate **Teachers’ Day 2026**.
 
-Currently, two official plugins are available:
+Students can choose someone from the CCIS community, leave a message of appreciation, and browse messages shared for faculty members, BLIS personnel, and other members of the community.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## ✨ Overview
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+The CCIS Teachers’ Day Message Wall was designed to give students a clean and meaningful way to say **thank you**.
 
-## Expanding the ESLint configuration
+Instead of a traditional greeting board, the platform provides individual message walls where appreciation messages can be written and viewed in one place.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+The project focuses on a minimal interface, responsive design, smooth interactions, and an easy experience across desktop and mobile devices.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+---
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Features
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Leave a Message
 
-```
+Students can browse the directory and choose the person they would like to thank.
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+Each individual page provides a dedicated message form where students can:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+- Enter their name or remain anonymous
+- Write a Teachers’ Day message
+- Submit a message of appreciation
+- Receive a randomly generated avatar for their message
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### View Messages
 
-```
+A dedicated message page makes it easier to read messages shared across the community.
+
+Messages can be:
+
+- Searched
+- Filtered by category
+- Filtered by recipient
+- Sorted by newest or oldest
+- Sorted alphabetically by recipient
+- Expanded using **See more** for longer messages
+
+### Community Directory
+
+The directory currently includes:
+
+- CCIS
+- BLIS
+- Personnel
+
+Users can search for a person, filter by category, and sort names alphabetically.
+
+### Responsive Design
+
+The interface is designed for:
+
+- Desktop
+- Laptop
+- Tablet
+- Mobile
+
+The layout automatically adapts while maintaining the same clean visual style.
+
+### Smooth Interface
+
+The application includes subtle transitions and micro-interactions for:
+
+- Page navigation
+- Directory filtering
+- Dropdown menus
+- Message cards
+- Buttons
+- Message expansion
+
+---
+
+## Tech Stack
+
+| Technology | Purpose |
+| --- | --- |
+| React | User interface |
+| TypeScript | Type-safe development |
+| Vite | Development and build tool |
+| Tailwind CSS | Styling |
+| React Router | Client-side routing |
+| Lucide React | Interface icons |
+| DiceBear | Generated message avatars |
+| Supabase | Database and backend integration |
+| Vercel | Deployment |
+
+---
+
+## Project Structure
+
+```text
+src/
+├── assets/
+│   └── ccis-logo.png
+│
+├── components/
+│   ├── AvatarStack.tsx
+│   └── Navbar.tsx
+│
+├── data/
+│   ├── faculty.ts
+│   └── messages.ts
+│
+├── pages/
+│   ├── Home.tsx
+│   ├── Faculty.tsx
+│   ├── Person.tsx
+│   └── Messages.tsx
+│
+├── App.tsx
+├── index.css
+└── main.tsx
