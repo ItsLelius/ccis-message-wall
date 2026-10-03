@@ -5,6 +5,8 @@ import {
   useState,
 } from "react"
 
+import { createPortal } from "react-dom"
+
 import { useNavigate } from "react-router-dom"
 
 import {
@@ -17,6 +19,7 @@ import {
   Search,
   SlidersHorizontal,
   Users,
+  X,
 } from "lucide-react"
 
 import ccisLogo from "../assets/ccis-logo.png"
@@ -70,7 +73,7 @@ const sortOptions: {
 
 const getMessagePreview = (
   content: string,
-  maxLength = 220,
+  maxLength = 180,
 ) => {
   if (content.length <= maxLength) {
     return content
@@ -95,6 +98,7 @@ const getMessagePreview = (
 const Messages = () => {
   const navigate = useNavigate()
 
+
   const [messages, setMessages] =
     useState<Message[]>([])
 
@@ -103,6 +107,7 @@ const Messages = () => {
 
   const [loadError, setLoadError] =
     useState("")
+
 
   const [search, setSearch] =
     useState("")
@@ -116,6 +121,7 @@ const Messages = () => {
   const [sort, setSort] =
     useState<SortOption>("newest")
 
+
   const [sortOpen, setSortOpen] =
     useState(false)
 
@@ -124,22 +130,24 @@ const Messages = () => {
     setRecipientOpen,
   ] = useState(false)
 
+
   const [
     visibleCount,
     setVisibleCount,
   ] = useState(8)
 
+
   const [
-    expandedMessages,
-    setExpandedMessages,
-  ] = useState<Set<string>>(
-    new Set(),
-  )
+    selectedMessage,
+    setSelectedMessage,
+  ] = useState<Message | null>(null)
+
 
   const [
     isLeaving,
     setIsLeaving,
   ] = useState(false)
+
 
   const sortRef =
     useRef<HTMLDivElement>(null)
@@ -147,6 +155,10 @@ const Messages = () => {
   const recipientRef =
     useRef<HTMLDivElement>(null)
 
+
+  /* =========================================
+     LOAD MESSAGES
+  ========================================= */
 
   useEffect(() => {
     let active = true
@@ -182,6 +194,10 @@ const Messages = () => {
     }
   }, [])
 
+
+  /* =========================================
+     OUTSIDE CLICK
+  ========================================= */
 
   useEffect(() => {
     const handleOutside = (
@@ -223,6 +239,10 @@ const Messages = () => {
   }, [])
 
 
+  /* =========================================
+     ESCAPE KEY
+  ========================================= */
+
   useEffect(() => {
     const handleEscape = (
       event: KeyboardEvent,
@@ -230,6 +250,7 @@ const Messages = () => {
       if (event.key === "Escape") {
         setSortOpen(false)
         setRecipientOpen(false)
+        setSelectedMessage(null)
       }
     }
 
@@ -247,6 +268,32 @@ const Messages = () => {
   }, [])
 
 
+  /* =========================================
+     LOCK BODY WHEN MODAL IS OPEN
+  ========================================= */
+
+  useEffect(() => {
+    if (!selectedMessage) {
+      return
+    }
+
+    const previousOverflow =
+      document.body.style.overflow
+
+    document.body.style.overflow =
+      "hidden"
+
+    return () => {
+      document.body.style.overflow =
+        previousOverflow
+    }
+  }, [selectedMessage])
+
+
+  /* =========================================
+     PERSON LOOKUP
+  ========================================= */
+
   const peopleBySlug =
     useMemo(() => {
       return new Map(
@@ -259,6 +306,10 @@ const Messages = () => {
       )
     }, [])
 
+
+  /* =========================================
+     FILTER + SEARCH + SORT
+  ========================================= */
 
   const filteredMessages =
     useMemo(() => {
@@ -362,12 +413,20 @@ const Messages = () => {
     ])
 
 
+  /* =========================================
+     VISIBLE MESSAGES
+  ========================================= */
+
   const visibleMessages =
     filteredMessages.slice(
       0,
       visibleCount,
     )
 
+
+  /* =========================================
+     SELECTED FILTER VALUES
+  ========================================= */
 
   const selectedRecipient =
     recipient === "all"
@@ -384,6 +443,10 @@ const Messages = () => {
     ) ?? sortOptions[0]
 
 
+  /* =========================================
+     NAVIGATION
+  ========================================= */
+
   const smoothNavigate = (
     path: string,
   ) => {
@@ -397,25 +460,9 @@ const Messages = () => {
   }
 
 
-  const toggleMessage = (
-    id: string,
-  ) => {
-    setExpandedMessages(
-      (current) => {
-        const next =
-          new Set(current)
-
-        if (next.has(id)) {
-          next.delete(id)
-        } else {
-          next.add(id)
-        }
-
-        return next
-      },
-    )
-  }
-
+  /* =========================================
+     FILTER HANDLERS
+  ========================================= */
 
   const handleSearch = (
     value: string,
@@ -478,6 +525,10 @@ const Messages = () => {
         }
       `}
     >
+
+      {/* =========================================
+          NAVBAR
+      ========================================= */}
 
       <header className="sticky top-0 z-50 border-b border-zinc-200/70 bg-white/95 backdrop-blur-xl">
 
@@ -576,6 +627,10 @@ const Messages = () => {
 
       <main>
 
+        {/* =========================================
+            INTRO
+        ========================================= */}
+
         <section className="border-b border-zinc-200/70">
 
           <div className="mx-auto max-w-7xl px-5 py-9 sm:px-8 sm:py-12 lg:px-10 lg:py-14">
@@ -609,10 +664,15 @@ const Messages = () => {
         </section>
 
 
+        {/* =========================================
+            MESSAGES SECTION
+        ========================================= */}
+
         <section>
 
           <div className="mx-auto max-w-7xl px-5 py-6 sm:px-8 sm:py-8 lg:px-10">
 
+            {/* SEARCH */}
             <div className="relative">
 
               <Search
@@ -636,7 +696,10 @@ const Messages = () => {
             </div>
 
 
-            {/* UPDATED DROPDOWN AREA ONLY */}
+            {/* =====================================
+                RECIPIENT + SORT
+            ===================================== */}
+
             <div className="mt-3 grid grid-cols-[minmax(0,1fr)_auto] gap-2.5">
 
               {/* RECIPIENT */}
@@ -722,6 +785,7 @@ const Messages = () => {
                 </button>
 
 
+                {/* RECIPIENT MENU */}
                 <div
                   className={`
                     absolute
@@ -776,6 +840,7 @@ const Messages = () => {
                       }
                     `}
                   >
+
                     All recipients
 
                     {recipient ===
@@ -791,7 +856,6 @@ const Messages = () => {
 
                   {facultyMembers.map(
                     (person) => {
-
                       const active =
                         recipient ===
                         person.slug
@@ -867,7 +931,9 @@ const Messages = () => {
 
                     setRecipientOpen(false)
                   }}
-                  aria-expanded={sortOpen}
+                  aria-expanded={
+                    sortOpen
+                  }
                   className="
                     flex h-11
                     min-w-[112px]
@@ -901,6 +967,7 @@ const Messages = () => {
                       strokeWidth={2}
                       className="shrink-0 text-zinc-400"
                     />
+
 
                     <span className="sm:hidden">
 
@@ -940,6 +1007,7 @@ const Messages = () => {
                 </button>
 
 
+                {/* SORT MENU */}
                 <div
                   className={`
                     absolute
@@ -967,7 +1035,6 @@ const Messages = () => {
 
                   {sortOptions.map(
                     (option) => {
-
                       const active =
                         sort ===
                         option.value
@@ -1025,6 +1092,10 @@ const Messages = () => {
             </div>
 
 
+            {/* =====================================
+                CATEGORY FILTERS
+            ===================================== */}
+
             <div className="mt-4 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
 
               {categories.map(
@@ -1062,6 +1133,10 @@ const Messages = () => {
             </div>
 
 
+            {/* =====================================
+                CONTENT
+            ===================================== */}
+
             {loading ? (
 
               <div className="mt-6 grid gap-3 lg:grid-cols-2">
@@ -1069,10 +1144,12 @@ const Messages = () => {
                 {Array.from({
                   length: 4,
                 }).map((_, index) => (
+
                   <div
                     key={index}
-                    className="h-[150px] animate-pulse rounded-2xl border border-zinc-200 bg-zinc-50"
+                    className="h-[200px] animate-pulse rounded-2xl border border-zinc-200 bg-zinc-50"
                   />
+
                 ))}
 
               </div>
@@ -1100,6 +1177,7 @@ const Messages = () => {
 
               <>
 
+                {/* COUNT */}
                 <div className="mt-6">
 
                   <p className="text-sm text-zinc-500">
@@ -1120,17 +1198,20 @@ const Messages = () => {
                 </div>
 
 
+                {/* =====================================
+                    MESSAGE GRID
+                ===================================== */}
+
                 {filteredMessages.length >
                 0 ? (
 
                   <div
                     key={`${category}-${recipient}-${sort}`}
-                    className="animate-filter-enter mt-5 grid items-start gap-3 lg:grid-cols-2"
+                    className="animate-filter-enter mt-5 grid gap-3 lg:grid-cols-2"
                   >
 
                     {visibleMessages.map(
                       (item) => {
-
                         const person =
                           peopleBySlug.get(
                             item.recipient_slug,
@@ -1141,153 +1222,186 @@ const Messages = () => {
                         }
 
 
-                        const expanded =
-                          expandedMessages.has(
-                            item.id,
-                          )
-
-
                         const longMessage =
                           item.message.length >
-                          220
+                          180
 
 
                         const preview =
                           getMessagePreview(
                             item.message,
+                            180,
                           )
 
 
                         return (
                           <article
                             key={item.id}
-                            className="animate-message-enter rounded-2xl border border-zinc-200 bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.025)] transition-all duration-200 hover:border-zinc-300 hover:shadow-[0_8px_28px_rgba(0,0,0,0.04)] sm:p-5"
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`Open message from ${item.sender_name}`}
+                            onClick={() =>
+                              setSelectedMessage(
+                                item,
+                              )
+                            }
+                            onKeyDown={(
+                              event,
+                            ) => {
+                              if (
+                                event.key ===
+                                  "Enter" ||
+                                event.key ===
+                                  " "
+                              ) {
+                                event.preventDefault()
+
+                                setSelectedMessage(
+                                  item,
+                                )
+                              }
+                            }}
+                            className="
+                              animate-message-enter
+                              group
+                              h-[200px]
+                              cursor-pointer
+                              overflow-hidden
+                              rounded-2xl
+                              border
+                              border-zinc-200
+                              bg-white
+                              p-4
+                              shadow-[0_1px_2px_rgba(0,0,0,0.025)]
+                              transition-all
+                              duration-200
+                              hover:-translate-y-[1px]
+                              hover:border-zinc-300
+                              hover:shadow-[0_10px_32px_rgba(0,0,0,0.055)]
+                              focus:outline-none
+                              focus:ring-4
+                              focus:ring-zinc-100
+                              sm:p-5
+                            "
                           >
 
-                            <div className="flex items-start gap-3">
+                            <div className="flex h-full flex-col">
 
-                              <img
-                                src={`https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(
-                                  item.avatar_seed,
-                                )}`}
-                                alt=""
-                                loading="lazy"
-                                className="h-10 w-10 shrink-0 rounded-full border border-zinc-200 bg-zinc-100"
-                              />
+                              {/* CARD HEADER */}
+                              <div className="flex shrink-0 items-start gap-3">
 
-
-                              <div className="min-w-0 flex-1">
-
-                                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-
-                                  <p className="text-sm font-semibold text-zinc-950">
-                                    {
-                                      item.sender_name
-                                    }
-                                  </p>
+                                <img
+                                  src={`https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(
+                                    item.avatar_seed,
+                                  )}`}
+                                  alt=""
+                                  loading="lazy"
+                                  className="h-10 w-10 shrink-0 rounded-full border border-zinc-200 bg-zinc-100"
+                                />
 
 
-                                  <span className="text-[11px] text-zinc-400">
+                                <div className="min-w-0 flex-1">
 
-                                    {new Date(
-                                      item.created_at,
-                                    ).toLocaleString(
-                                      [],
+                                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+
+                                    <p className="truncate text-sm font-semibold text-zinc-950">
                                       {
-                                        month:
-                                          "short",
-                                        day:
-                                          "numeric",
-                                        hour:
-                                          "2-digit",
-                                        minute:
-                                          "2-digit",
-                                      },
-                                    )}
+                                        item.sender_name
+                                      }
+                                    </p>
 
-                                  </span>
+
+                                    <span className="shrink-0 text-[11px] text-zinc-400">
+
+                                      {new Date(
+                                        item.created_at,
+                                      ).toLocaleString(
+                                        [],
+                                        {
+                                          month:
+                                            "short",
+                                          day:
+                                            "numeric",
+                                          hour:
+                                            "2-digit",
+                                          minute:
+                                            "2-digit",
+                                        },
+                                      )}
+
+                                    </span>
+
+                                  </div>
+
+
+                                  {/* RECIPIENT */}
+                                  <button
+                                    type="button"
+                                    onClick={(
+                                      event,
+                                    ) => {
+                                      event.stopPropagation()
+
+                                      smoothNavigate(
+                                        `/faculty/${person.slug}`,
+                                      )
+                                    }}
+                                    className="group/recipient mt-1 flex max-w-full items-center gap-1 text-left text-xs text-zinc-400 transition-colors duration-200 hover:text-zinc-700"
+                                  >
+
+                                    <span className="shrink-0">
+                                      To:
+                                    </span>
+
+                                    <span className="truncate font-medium">
+                                      {
+                                        person.name
+                                      }
+                                    </span>
+
+                                    <ArrowRight
+                                      size={11}
+                                      strokeWidth={2}
+                                      className="shrink-0 transition-transform duration-200 group-hover/recipient:translate-x-0.5"
+                                    />
+
+                                  </button>
 
                                 </div>
 
+                              </div>
 
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    smoothNavigate(
-                                      `/faculty/${person.slug}`,
-                                    )
-                                  }
-                                  className="group mt-1 flex max-w-full items-center gap-1 text-left text-xs text-zinc-400 transition-colors hover:text-zinc-700"
-                                >
 
-                                  <span>
-                                    To:
-                                  </span>
+                              {/* MESSAGE PREVIEW */}
+                              <div className="mt-4 min-h-0 flex-1">
 
-                                  <span className="truncate font-medium">
-                                    {
-                                      person.name
-                                    }
-                                  </span>
+                                <p className="max-h-[72px] overflow-hidden whitespace-pre-wrap break-words text-[14px] leading-6 text-zinc-600">
 
-                                  <ArrowRight
-                                    size={11}
-                                    className="shrink-0 transition-transform group-hover:translate-x-0.5"
-                                  />
+                                  {longMessage
+                                    ? `${preview}...`
+                                    : item.message}
 
-                                </button>
+                                </p>
+
+                              </div>
+
+
+                              {/* OPEN MESSAGE */}
+                              <div className="mt-auto flex shrink-0 items-center gap-1 pt-2 text-xs font-semibold text-zinc-500 transition-colors duration-200 group-hover:text-zinc-950">
+
+                                {longMessage
+                                  ? "View full message"
+                                  : "Open message"}
+
+                                <ArrowRight
+                                  size={12}
+                                  strokeWidth={2}
+                                  className="transition-transform duration-200 group-hover:translate-x-0.5"
+                                />
 
                               </div>
 
                             </div>
-
-
-                            {longMessage ? (
-
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  toggleMessage(
-                                    item.id,
-                                  )
-                                }
-                                className="mt-4 block w-full text-left"
-                              >
-
-                                <p className="whitespace-pre-wrap break-words text-[14px] leading-6 text-zinc-600">
-
-                                  {expanded ? (
-                                    <>
-                                      {
-                                        item.message
-                                      }{" "}
-
-                                      <span className="whitespace-nowrap font-semibold text-zinc-950">
-                                        Show less
-                                      </span>
-                                    </>
-                                  ) : (
-                                    <>
-                                      {preview}
-                                      {"... "}
-
-                                      <span className="whitespace-nowrap font-semibold text-zinc-950">
-                                        See more
-                                      </span>
-                                    </>
-                                  )}
-
-                                </p>
-
-                              </button>
-
-                            ) : (
-
-                              <p className="mt-4 whitespace-pre-wrap break-words text-[14px] leading-6 text-zinc-600">
-                                {item.message}
-                              </p>
-
-                            )}
 
                           </article>
                         )
@@ -1297,6 +1411,8 @@ const Messages = () => {
                   </div>
 
                 ) : (
+
+                  /* EMPTY STATE */
 
                   <div className="animate-filter-enter mt-5 flex min-h-[300px] flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/40 px-6 text-center">
 
@@ -1317,7 +1433,7 @@ const Messages = () => {
                     <button
                       type="button"
                       onClick={clearFilters}
-                      className="mt-4 rounded-md px-3 py-2 text-sm font-medium text-zinc-950 hover:bg-zinc-100"
+                      className="mt-4 rounded-md px-3 py-2 text-sm font-medium text-zinc-950 transition-colors duration-200 hover:bg-zinc-100"
                     >
                       Clear filters
                     </button>
@@ -1326,6 +1442,10 @@ const Messages = () => {
 
                 )}
 
+
+                {/* =====================================
+                    LOAD MORE
+                ===================================== */}
 
                 {visibleCount <
                   filteredMessages.length && (
@@ -1340,13 +1460,15 @@ const Messages = () => {
                             current + 8,
                         )
                       }
-                      className="group flex h-11 items-center gap-2 rounded-xl border border-zinc-200 bg-white px-5 text-sm font-medium text-zinc-700 shadow-sm transition-all hover:bg-zinc-50"
+                      className="group flex h-11 items-center gap-2 rounded-xl border border-zinc-200 bg-white px-5 text-sm font-medium text-zinc-700 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:bg-zinc-50 hover:shadow-md"
                     >
 
                       Load more messages
 
                       <ChevronDown
                         size={14}
+                        strokeWidth={2}
+                        className="transition-transform duration-200 group-hover:translate-y-0.5"
                       />
 
                     </button>
@@ -1365,6 +1487,240 @@ const Messages = () => {
 
       </main>
 
+
+      {/* =========================================
+          TRUE VIEWPORT-CENTERED MODAL
+      ========================================= */}
+
+      {selectedMessage &&
+        createPortal(
+          (() => {
+            const person =
+              peopleBySlug.get(
+                selectedMessage.recipient_slug,
+              )
+
+            if (!person) {
+              return null
+            }
+
+            return (
+              <div
+                className="
+                  fixed
+                  inset-0
+                  z-[9999]
+                  grid
+                  place-items-center
+                  bg-black/40
+                  p-4
+                  backdrop-blur-[3px]
+                  sm:p-6
+                "
+                onClick={() =>
+                  setSelectedMessage(
+                    null,
+                  )
+                }
+              >
+
+                <div
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label="Full appreciation message"
+                  onClick={(event) =>
+                    event.stopPropagation()
+                  }
+                  className="
+                    animate-scale-enter
+                    w-full
+                    max-w-[560px]
+                    rounded-2xl
+                    border
+                    border-zinc-200
+                    bg-white
+                    p-5
+                    shadow-[0_24px_80px_rgba(0,0,0,0.22)]
+                    sm:p-6
+                  "
+                >
+
+                  {/* MODAL HEADER */}
+                  <div className="flex items-start gap-3">
+
+                    <img
+                      src={`https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(
+                        selectedMessage.avatar_seed,
+                      )}`}
+                      alt=""
+                      className="h-11 w-11 shrink-0 rounded-full border border-zinc-200 bg-zinc-100"
+                    />
+
+
+                    <div className="min-w-0 flex-1">
+
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+
+                        <p className="text-sm font-semibold text-zinc-950">
+                          {
+                            selectedMessage.sender_name
+                          }
+                        </p>
+
+
+                        <span className="text-[11px] text-zinc-400">
+
+                          {new Date(
+                            selectedMessage.created_at,
+                          ).toLocaleString(
+                            [],
+                            {
+                              month:
+                                "short",
+                              day:
+                                "numeric",
+                              year:
+                                "numeric",
+                              hour:
+                                "2-digit",
+                              minute:
+                                "2-digit",
+                            },
+                          )}
+
+                        </span>
+
+                      </div>
+
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedMessage(
+                            null,
+                          )
+
+                          smoothNavigate(
+                            `/faculty/${person.slug}`,
+                          )
+                        }}
+                        className="group mt-1 flex max-w-full items-center gap-1 text-left text-xs text-zinc-400 transition-colors duration-200 hover:text-zinc-700"
+                      >
+
+                        <span className="shrink-0">
+                          To:
+                        </span>
+
+                        <span className="truncate font-medium">
+                          {person.name}
+                        </span>
+
+                        <ArrowRight
+                          size={11}
+                          strokeWidth={2}
+                          className="shrink-0 transition-transform duration-200 group-hover:translate-x-0.5"
+                        />
+
+                      </button>
+
+                    </div>
+
+
+                    {/* X */}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSelectedMessage(
+                          null,
+                        )
+                      }
+                      aria-label="Close message"
+                      className="
+                        flex
+                        h-9
+                        w-9
+                        shrink-0
+                        items-center
+                        justify-center
+                        rounded-lg
+                        border
+                        border-zinc-200
+                        bg-white
+                        text-zinc-500
+                        transition-all
+                        duration-200
+                        hover:border-zinc-300
+                        hover:bg-zinc-50
+                        hover:text-zinc-950
+                      "
+                    >
+
+                      <X
+                        size={16}
+                        strokeWidth={2}
+                      />
+
+                    </button>
+
+                  </div>
+
+
+                  {/* FULL MESSAGE */}
+                  <div className="mt-5 border-t border-zinc-100 pt-5">
+
+                    <p className="whitespace-pre-wrap break-words text-[15px] leading-7 text-zinc-700">
+                      {
+                        selectedMessage.message
+                      }
+                    </p>
+
+                  </div>
+
+
+                  {/* CLOSE */}
+                  <div className="mt-6 flex justify-end">
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSelectedMessage(
+                          null,
+                        )
+                      }
+                      className="
+                        flex
+                        h-10
+                        items-center
+                        justify-center
+                        rounded-lg
+                        bg-zinc-950
+                        px-4
+                        text-sm
+                        font-medium
+                        text-white
+                        transition-all
+                        duration-200
+                        hover:bg-zinc-800
+                        active:scale-[0.98]
+                      "
+                    >
+                      Close
+                    </button>
+
+                  </div>
+
+                </div>
+
+              </div>
+            )
+          })(),
+          document.body,
+        )}
+
+
+      {/* =========================================
+          FOOTER
+      ========================================= */}
 
       <footer className="mt-14 border-t border-zinc-200 bg-white">
 
