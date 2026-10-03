@@ -99,12 +99,6 @@ export const facultyMembers: FacultyMember[] = [
     slug: "kim-lloyd-castro",
     category: "CCIS",
   },
-  {
-    id: 27,
-    name: "Frangelin Bendisula",
-    slug: "frangelin-bendisula",
-    category: "CCIS",
-  },
 
   // =========================================================
   // BLIS
