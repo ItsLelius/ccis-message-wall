@@ -14,12 +14,13 @@ import {
   ArrowRight,
   Check,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Mail,
   MessageCircle,
   Search,
   SlidersHorizontal,
   Users,
-  X,
 } from "lucide-react"
 
 import ccisLogo from "../assets/ccis-logo.png"
@@ -42,6 +43,14 @@ type SortOption =
   | "newest"
   | "oldest"
   | "recipient"
+
+type PaginationItem =
+  | number
+  | "left-ellipsis"
+  | "right-ellipsis"
+
+
+const PAGE_SIZE = 8
 
 
 const categories: CategoryFilter[] = [
@@ -95,6 +104,50 @@ const getMessagePreview = (
 }
 
 
+const getPaginationItems = (
+  currentPage: number,
+  totalPages: number,
+): PaginationItem[] => {
+  if (totalPages <= 7) {
+    return Array.from(
+      { length: totalPages },
+      (_, index) => index + 1,
+    )
+  }
+
+  const items: PaginationItem[] = [1]
+
+  const startPage =
+    Math.max(2, currentPage - 1)
+
+  const endPage =
+    Math.min(
+      totalPages - 1,
+      currentPage + 1,
+    )
+
+  if (startPage > 2) {
+    items.push("left-ellipsis")
+  }
+
+  for (
+    let page = startPage;
+    page <= endPage;
+    page += 1
+  ) {
+    items.push(page)
+  }
+
+  if (endPage < totalPages - 1) {
+    items.push("right-ellipsis")
+  }
+
+  items.push(totalPages)
+
+  return items
+}
+
+
 const Messages = () => {
   const navigate = useNavigate()
 
@@ -132,9 +185,9 @@ const Messages = () => {
 
 
   const [
-    visibleCount,
-    setVisibleCount,
-  ] = useState(8)
+    currentPage,
+    setCurrentPage,
+  ] = useState(1)
 
 
   const [
@@ -414,14 +467,64 @@ const Messages = () => {
 
 
   /* =========================================
-     VISIBLE MESSAGES
+     PAGINATION
   ========================================= */
 
-  const visibleMessages =
-    filteredMessages.slice(
-      0,
-      visibleCount,
+  const totalPages =
+    Math.max(
+      1,
+      Math.ceil(
+        filteredMessages.length /
+          PAGE_SIZE,
+      ),
     )
+
+
+  const startIndex =
+    (currentPage - 1) *
+    PAGE_SIZE
+
+
+  const paginatedMessages =
+    filteredMessages.slice(
+      startIndex,
+      startIndex + PAGE_SIZE,
+    )
+
+
+  const paginationItems =
+    getPaginationItems(
+      currentPage,
+      totalPages,
+    )
+
+
+  const goToPage = (
+    page: number,
+  ) => {
+    if (
+      page < 1 ||
+      page > totalPages ||
+      page === currentPage
+    ) {
+      return
+    }
+
+    setCurrentPage(page)
+
+    window.requestAnimationFrame(
+      () => {
+        document
+          .getElementById(
+            "message-results",
+          )
+          ?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          })
+      },
+    )
+  }
 
 
   /* =========================================
@@ -468,7 +571,7 @@ const Messages = () => {
     value: string,
   ) => {
     setSearch(value)
-    setVisibleCount(8)
+    setCurrentPage(1)
   }
 
 
@@ -476,7 +579,7 @@ const Messages = () => {
     value: CategoryFilter,
   ) => {
     setCategory(value)
-    setVisibleCount(8)
+    setCurrentPage(1)
   }
 
 
@@ -485,7 +588,7 @@ const Messages = () => {
   ) => {
     setRecipient(value)
     setRecipientOpen(false)
-    setVisibleCount(8)
+    setCurrentPage(1)
   }
 
 
@@ -494,7 +597,7 @@ const Messages = () => {
   ) => {
     setSort(value)
     setSortOpen(false)
-    setVisibleCount(8)
+    setCurrentPage(1)
   }
 
 
@@ -503,7 +606,7 @@ const Messages = () => {
     setCategory("All")
     setRecipient("all")
     setSort("newest")
-    setVisibleCount(8)
+    setCurrentPage(1)
   }
 
 
@@ -1178,22 +1281,46 @@ const Messages = () => {
               <>
 
                 {/* COUNT */}
-                <div className="mt-6">
+                <div
+                  id="message-results"
+                  className="scroll-mt-24 mt-6"
+                >
 
-                  <p className="text-sm text-zinc-500">
+                  <div className="flex items-center justify-between gap-4">
 
-                    <span className="font-semibold text-zinc-950">
-                      {
-                        filteredMessages.length
-                      }
-                    </span>{" "}
+                    <p className="text-sm text-zinc-500">
 
-                    {filteredMessages.length ===
-                    1
-                      ? "message"
-                      : "messages"}
+                      <span className="font-semibold text-zinc-950">
+                        {
+                          filteredMessages.length
+                        }
+                      </span>{" "}
 
-                  </p>
+                      {filteredMessages.length ===
+                      1
+                        ? "message"
+                        : "messages"}
+
+                    </p>
+
+
+                    {filteredMessages.length >
+                      PAGE_SIZE && (
+
+                      <p className="text-xs text-zinc-400">
+                        Page{" "}
+                        <span className="font-medium text-zinc-700">
+                          {currentPage}
+                        </span>{" "}
+                        of{" "}
+                        <span className="font-medium text-zinc-700">
+                          {totalPages}
+                        </span>
+                      </p>
+
+                    )}
+
+                  </div>
 
                 </div>
 
@@ -1206,11 +1333,11 @@ const Messages = () => {
                 0 ? (
 
                   <div
-                    key={`${category}-${recipient}-${sort}`}
+                    key={`${category}-${recipient}-${sort}-${currentPage}`}
                     className="animate-filter-enter mt-5 grid gap-3 lg:grid-cols-2"
                   >
 
-                    {visibleMessages.map(
+                    {paginatedMessages.map(
                       (item) => {
                         const person =
                           peopleBySlug.get(
@@ -1444,36 +1571,191 @@ const Messages = () => {
 
 
                 {/* =====================================
-                    LOAD MORE
+                    PAGINATION
                 ===================================== */}
 
-                {visibleCount <
-                  filteredMessages.length && (
+                {filteredMessages.length >
+                  PAGE_SIZE && (
 
-                  <div className="mt-7 flex justify-center">
+                  <nav
+                    aria-label="Message pagination"
+                    className="mt-8 flex flex-col items-center gap-3"
+                  >
 
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setVisibleCount(
-                          (current) =>
-                            current + 8,
-                        )
-                      }
-                      className="group flex h-11 items-center gap-2 rounded-xl border border-zinc-200 bg-white px-5 text-sm font-medium text-zinc-700 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:bg-zinc-50 hover:shadow-md"
-                    >
+                    <div className="flex items-center justify-center gap-1.5">
 
-                      Load more messages
+                      {/* PREVIOUS */}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          goToPage(
+                            currentPage - 1,
+                          )
+                        }
+                        disabled={
+                          currentPage === 1
+                        }
+                        aria-label="Previous page"
+                        className="
+                          flex
+                          h-9
+                          w-9
+                          items-center
+                          justify-center
+                          rounded-lg
+                          border
+                          border-zinc-200
+                          bg-white
+                          text-zinc-600
+                          transition-all
+                          duration-200
+                          hover:border-zinc-300
+                          hover:bg-zinc-50
+                          hover:text-zinc-950
+                          disabled:pointer-events-none
+                          disabled:opacity-35
+                        "
+                      >
 
-                      <ChevronDown
-                        size={14}
-                        strokeWidth={2}
-                        className="transition-transform duration-200 group-hover:translate-y-0.5"
-                      />
+                        <ChevronLeft
+                          size={15}
+                          strokeWidth={2}
+                        />
 
-                    </button>
+                      </button>
 
-                  </div>
+
+                      {/* PAGE NUMBERS */}
+                      {paginationItems.map(
+                        (item) => {
+                          if (
+                            item ===
+                              "left-ellipsis" ||
+                            item ===
+                              "right-ellipsis"
+                          ) {
+                            return (
+                              <span
+                                key={item}
+                                className="flex h-9 w-7 items-center justify-center text-sm text-zinc-400"
+                              >
+                                …
+                              </span>
+                            )
+                          }
+
+                          const active =
+                            item ===
+                            currentPage
+
+                          return (
+                            <button
+                              key={item}
+                              type="button"
+                              onClick={() =>
+                                goToPage(
+                                  item,
+                                )
+                              }
+                              aria-current={
+                                active
+                                  ? "page"
+                                  : undefined
+                              }
+                              className={`
+                                flex
+                                h-9
+                                min-w-9
+                                items-center
+                                justify-center
+                                rounded-lg
+                                border
+                                px-2.5
+                                text-sm
+                                font-medium
+                                transition-all
+                                duration-200
+
+                                ${
+                                  active
+                                    ? "border-zinc-950 bg-zinc-950 text-white shadow-sm"
+                                    : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-950"
+                                }
+                              `}
+                            >
+                              {item}
+                            </button>
+                          )
+                        },
+                      )}
+
+
+                      {/* NEXT */}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          goToPage(
+                            currentPage + 1,
+                          )
+                        }
+                        disabled={
+                          currentPage ===
+                          totalPages
+                        }
+                        aria-label="Next page"
+                        className="
+                          flex
+                          h-9
+                          w-9
+                          items-center
+                          justify-center
+                          rounded-lg
+                          border
+                          border-zinc-200
+                          bg-white
+                          text-zinc-600
+                          transition-all
+                          duration-200
+                          hover:border-zinc-300
+                          hover:bg-zinc-50
+                          hover:text-zinc-950
+                          disabled:pointer-events-none
+                          disabled:opacity-35
+                        "
+                      >
+
+                        <ChevronRight
+                          size={15}
+                          strokeWidth={2}
+                        />
+
+                      </button>
+
+                    </div>
+
+
+                    <p className="text-xs text-zinc-400">
+                      Showing{" "}
+                      <span className="font-medium text-zinc-600">
+                        {startIndex + 1}
+                      </span>
+                      {" – "}
+                      <span className="font-medium text-zinc-600">
+                        {Math.min(
+                          startIndex +
+                            PAGE_SIZE,
+                          filteredMessages.length,
+                        )}
+                      </span>
+                      {" of "}
+                      <span className="font-medium text-zinc-600">
+                        {
+                          filteredMessages.length
+                        }
+                      </span>
+                    </p>
+
+                  </nav>
 
                 )}
 
@@ -1489,7 +1771,7 @@ const Messages = () => {
 
 
       {/* =========================================
-          TRUE VIEWPORT-CENTERED MODAL
+          MESSAGE MODAL
       ========================================= */}
 
       {selectedMessage &&
@@ -1625,43 +1907,6 @@ const Messages = () => {
 
                     </div>
 
-
-                    {/* X */}
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setSelectedMessage(
-                          null,
-                        )
-                      }
-                      aria-label="Close message"
-                      className="
-                        flex
-                        h-9
-                        w-9
-                        shrink-0
-                        items-center
-                        justify-center
-                        rounded-lg
-                        border
-                        border-zinc-200
-                        bg-white
-                        text-zinc-500
-                        transition-all
-                        duration-200
-                        hover:border-zinc-300
-                        hover:bg-zinc-50
-                        hover:text-zinc-950
-                      "
-                    >
-
-                      <X
-                        size={16}
-                        strokeWidth={2}
-                      />
-
-                    </button>
-
                   </div>
 
 
@@ -1677,7 +1922,7 @@ const Messages = () => {
                   </div>
 
 
-                  {/* CLOSE */}
+                  {/* SINGLE CLOSE ACTION */}
                   <div className="mt-6 flex justify-end">
 
                     <button
