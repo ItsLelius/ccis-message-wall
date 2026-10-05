@@ -22,7 +22,7 @@ const Navbar = () => {
           <div className="leading-none">
 
             <p className="text-[15px] font-semibold tracking-[-0.02em] text-zinc-950">
-              CJC | CCIS
+              CCIS
             </p>
 
             <p className="mt-1 text-[11px] text-zinc-500 sm:text-xs">
