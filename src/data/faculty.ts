@@ -181,11 +181,5 @@ export const facultyMembers: FacultyMember[] = [
     slug: "romeo-mendez-jr",
     category: "Personnel",
   },
-  {
-    id: 27,
-    name: "Marquis Gwapo",
-    slug: "marquis-gwapo",
-    category: "Personnel",
-  },
 
 ]
